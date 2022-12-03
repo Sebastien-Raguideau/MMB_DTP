@@ -1,9 +1,6 @@
 #!/bin/bash
 
-echo "install repos/tools needed for workshop"
-
 ###### seb ll -h need accomodation ######
-sed -i 's/ls -alF/ls -lhaF/g' .bashrc 
 
 export REPOS=$HOME"/repos"
 mkdir -p $REPOS
@@ -37,21 +34,17 @@ sudo apt-get -y install qt5-default gzip unzip feh evince
 # ----- Chris tuto -------------
 # ------------------------------
 cd $HOME/repos/STRONG
-# conda/mamba is not in the path for root, so I need to add it
-export PATH=/var/lib/miniconda3/condabin:$PATH
-./install_STRONG.sh
 
-# Bandage install
-cd $HOME/repos/
-wget https://github.com/rrwick/Bandage/releases/download/v0.8.1/Bandage_Ubuntu_dynamic_v0_8_1.zip
-mkdir Bandage && unzip Bandage_Ubuntu_dynamic_v0_8_1.zip -d Bandage && mv Bandage_Ubuntu_dynamic_v0_8_1.zip Bandage
+# conda/mamba is not in the path for root, so I need to add it
+./install_STRONG.sh
 
 # trait inference
 mamba env create -f $APP_DIR/conda_env_Trait_inference.yaml
 
 # Plasmidnet
 mamba create --name plasmidnet python=3.8 -y
-source /var/lib/miniconda3/bin/activate plasmidnet
+export CONDA=$(dirname $(which conda))
+source $CONDA/activate plasmidnet
 pip install -r $HOME/repos/PlasmidNet/requirements.txt
 
 # -------------------------------------
@@ -75,8 +68,8 @@ mamba env create -f $APP_DIR/conda_env_LongReads.yaml
 # -----------Seb Tuto --------------
 # -------------------------------------
 
-source /var/lib/miniconda3/bin/deactivate
-source /var/lib/miniconda3/bin/activate STRONG
+source $CONDA/deactivate
+source $CONDA/activate STRONG
 mamba install -c bioconda checkm-genome megahit bwa
 
 # # add checkm database
@@ -120,14 +113,54 @@ echo -e 'export PATH=/home/ubuntu/repos/strainberry:$PATH'>>$HOME/.bashrc
 echo -e "\n\n #------ plasmidnet -------">>$HOME/.bashrc 
 echo -e 'export PATH=/home/ubuntu/repos/PlasmidNet/bin:$PATH'>>$HOME/.bashrc
 
-# --------------------------------------------
-# ------------ fix rigths --------------------
-# --------------------------------------------
 
-# mamba crash as a user and this fix it
-chown -R 1000:1000 /var/lib/miniconda3
 
-# fix HOME ownership, so that user can create stuffs
-chown -R 1000:1000 $HOME/*
-# }&>"$APP_DIR/vm_install.log"
+###### Install Bandage ######
+wget https://github.com/rrwick/Bandage/releases/download/v0.9.0/Bandage_Ubuntu-x86-64_v0.9.0_AppImage.zip
+unzip Bandage_Ubuntu-x86-64_v0.9.0_AppImage.zip
+ln -s Bandage_Ubuntu-x86-64_v0.9.0_AppImage /home/ubuntu/repos/miniconda3/bin/Bandage
 
+###### add silly jpg ######
+cd 
+wget https://raw.githubusercontent.com/Sebastien-Raguideau/strain_resolution_practical/main/Figures/image_you_want_to_copy.jpg
+wget https://raw.githubusercontent.com/Sebastien-Raguideau/strain_resolution_practical/main/Figures/image_you_want_to_display.jpg
+
+
+
+
+
+
+# -------------------------------------
+# ---------- download datasets  -------
+# -------------------------------------
+mkdir $HOME/Data
+rsync -a --progress -L "sebr@137.205.71.34:/home/sebr/seb/Project/Tuto/MMB_DTP/datasets/*" "$HOME/Data/"
+cd $HOME/Data
+
+tar xzvf AD16S.tar.gz && mv data AD_16S && rm AD16S.tar.gz && mv metadata.tsv AD_16S&
+tar xzvf HIFI_data.tar.gz && rm HIFI_data.tar.gz &
+tar xzvf Quince_datasets.tar.gz && mv Quince_datasets/* . && rm Quince_datasets.tar.gz && rm -r Quince_datasets&
+tar xzvf STRONG_prerun.tar.gz && rm STRONG_prerun.tar.gz&
+
+
+# -------------------------------------
+# ---------- download databases -------
+# -------------------------------------
+mkdir -p $HOME/Databases
+cd $HOME/Databases
+
+# wget https://data.ace.uq.edu.au/public/gtdb/data/releases/latest/auxillary_files/gtdbtk_v2_data.tar.gz
+wget https://genome-idx.s3.amazonaws.com/kraken/k2_standard_08gb_20220926.tar.gz& 
+wget https://data.ace.uq.edu.au/public/CheckM_databases/checkm_data_2015_01_16.tar.gz&
+
+# rsync databases
+# dada2 
+rsync -a --progress -L "sebr@137.205.71.34:/mnt/gpfs/seb/Database/silva/silva_dada2_138" "$HOME/Databases/"
+# cogs
+rsync -a --progress -L "sebr@137.205.71.34:/mnt/gpfs/seb/Database/rpsblast_cog_db/Cog_LE.tar.gz" "$HOME/Databases/"
+
+# untar
+mkdir Cog && tar xzvf Cog_LE.tar.gz -C Cog && rm Cog_LE.tar.gz
+mkdir checkm && tar xzvf checkm_data_2015_01_16.tar.gz -C checkm && rm checkm_data_2015_01_16.tar.gz
+mkdir kraken && tar xzvf k2_standard_08gb_20220926.tar.gz -C kraken && rm k2_standard_08gb_20220926.tar.gz
+rm *.log

@@ -1,0 +1,16 @@
+name: R_env
+channels:
+  - conda-forge
+  - r
+  - bioconda
+dependencies:
+  - r-base
+  - bioconductor-dada2
+  - bioconductor-phyloseq
+  - r-vegan
+  - ggplot
+  - r-ggplot2
+  - r-reshape2
+  - r-dplyr
+  - r-viridis
+  - r-tidyr

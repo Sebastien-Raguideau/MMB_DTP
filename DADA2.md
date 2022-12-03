@@ -1,14 +1,16 @@
 # 16S processing tutoriel
-16S sequencing is done by selectively targeting some specific conserved regions of the 16s ribosomal RNA. This is done using primer designed to correspond exactly to the conserved regions so that all reads start exactly from the conserved region and span the variable region from which we can infer taxonomy. Primers/Amplicons are designed/selected so that Forward and Reverse reads starting from each side of the amplicon may meet in the midle and overlap. 
+16S sequencing is done by selectively targeting some specific conserved regions of the 16s ribosomal RNA. This is done using primer designed to correspond to the conserved regions so that all reads starts from the conserved region and span the variable region from which we can infer taxonomy. Primers are designed/selected so that Forward and Reverse reads starting from each side of the amplicon may meet in the middle and overlap. 
 
-![alt tag](16s-gene.png)
+![alt tag](./Figures/16s-gene.png)
 
 ### Plan 
-1) Using dada2 
+1) Using [dada2](https://www.nature.com/articles/nmeth.3869#methods)
 3) Phyloseq for diversity and graphs
 
 ## 1) DADA2
-Dada2 is a denoising algorithm. It aims at distinguishing differences between variants and read sequencing substitution errors. It output ASV for amplicon sequence variants. ASV are higher resolutions than OTUs and aim at a variant level resolutions.
+Dada2 is a denoising algorithm. It aims at distinguishing differences between variants and read sequencing substitution errors. It output ASV for Amplicon Sequence Variants. ASV are higher resolutions than OTUs and aim at a variant level resolutions.
+
+What is an OTU?
 
 To start, let's create an output folder where we will do this analysis, AD_16S. 
 
@@ -16,9 +18,7 @@ To start, let's create an output folder where we will do this analysis, AD_16S.
 <p>
 
 ```
-cd ~/Projects
-mkdir AD_16S
-cd AD_16S
+mkdir -p Projects/AD_16S
 ```
 
 </p>
@@ -32,7 +32,7 @@ This library contains all the functions from dada2.
 
 Let's define the path to our dataset as well as the path to our output folder
 
-    path_data = "/home/ubuntu/Data/AD/16S/data"
+    path_data = "/home/ubuntu/Data/AD_16S"
     path_out = "/home/ubuntu/Projects/AD_16S"
 
 ### Read quality
@@ -44,15 +44,15 @@ Dada2 allows us to do so easily
 
 **plotQualityProfile** to ... plot fastq files quality as a function of position alon the read
 
-    pdf("quality.pdf")
+    pdf(paste(path_out,"quality.pdf",sep="/"))
     plotQualityProfile(R1_files)
     plotQualityProfile(R2_files)
     dev.off()
 
 Use evince to look at the output. 
 
-![alt tag](/figs/R1_qual_init.png)
-![alt tag](/figs/R2_qual_init.png)
+![alt tag](/Figures/R1_qual_init.png)
+![alt tag](/Figures/R2_qual_init.png)
 
 How is the quality of the reads? 
 There is a pattern in quality, describe what can be seen.
@@ -90,14 +90,14 @@ We definetely want to use the options :  trunclen, maxN, maxEE, truncQ, rm.phix,
 
 Let's look at the quality of currents these filtered reads.
 
-    pdf("quality_Filtered.pdf")
+    pdf(paste(path_out,"quality_Filtered.pdf",sep="/"))
     plotQualityProfile(Filtered_R1)
     plotQualityProfile(Filtered_R2)
     dev.off()
 
 
 ### Learning the error rates
-This is the most time consumming part of the pipeline. 
+This is the most time consuming part of the pipeline. 
 
 
     Error_R1 <- learnErrors(Filtered_R1, multithread=TRUE)
@@ -106,20 +106,19 @@ This is the most time consumming part of the pipeline.
 <details><summary> If it takes too long</summary>
 <p>
 
-    Error_R1 = readRDS(file  =  "/home/ubuntu/Prerun/AD16S/errors_R1.rds")
-    Error_R2 = readRDS(file  =  "/home/ubuntu/Prerun/AD16S/errors_R2.rds")
+Just wait....
 
 </p>
 </details>
 
 Let's have a look at the error model that dada2 will be using : 
 
-    pdf("Errors_learned.pdf")
+    pdf(paste(path_out,"Errors_learned.pdf",sep="/"))
     plotErrors(Error_R1, nominalQ=TRUE)
     plotErrors(Error_R2, nominalQ=TRUE)
     dev.off()
 
-![alt tag](/figs/Error_learned.png)
+![alt tag](/Figures/Error_learned.png)
 
 Can you intuite what the red and black lines correspond to? 
 
@@ -136,11 +135,21 @@ Can you intuite what the red and black lines correspond to?
 ### Merge reads 
 
     mergers <- mergePairs(dada_R1, Derep_R1, dada_R2, Derep_R2, verbose=TRUE)
+    
+ Inspect the distribution of sequence lengths:
+ ```
+Seqtab <- makeSequenceTable(mergers)
+table(nchar(getSequences(Seqtab)))
+```
+Sometimes, due to non-specific priming sequence way too long/short may be seen. You can select expected length distribution with:
 
+    Seqtab <- Seqtab[,nchar(colnames(Seqtab)) %in% 250:256]
+
+ 
 
 ### Chimera
-
-    Seqtab <- makeSequenceTable(mergers)
+What is a chimera?
+    
     Seqtab.nochim <- removeBimeraDenovo(Seqtab, method="consensus", verbose=TRUE)
 
 ### Summary
@@ -157,8 +166,8 @@ How many different sequences do we end up with?
 
 ### Taxonomic annotation
 
-    taxa <- assignTaxonomy(Seqtab.nochim, "~/Databases/silva_nr_v132_train_set.fa.gz", multithread=TRUE)
-    taxa <- addSpecies(taxa, "~/Databases/silva_species_assignment_v132.fa.gz")
+    taxa <- assignTaxonomy(Seqtab.nochim, "~/Databases/silva_dada2_138/silva_nr99_v138.1_train_set.fa.gz", multithread=TRUE)
+    taxa <- addSpecies(taxa, "~/Databases/silva_dada2_138/silva_species_assignment_v138.1.fa.gz")
 
 #### Intermediary Results
 
@@ -177,7 +186,7 @@ For most application the phyloseq object need at least
 First load the library and the metadata
 
      library(phyloseq)
-     metadata <- read.table("/home/ubuntu/Data/AD/16S/metadata.tsv", sep="\t", header=TRUE, row.names=1)
+     metadata <- read.table("/home/ubuntu/Data/AD_16S/metadata.tsv", sep="\t", header=TRUE, row.names=1)
      str(metadata)
 
 Then let's create a phyoseq object
@@ -212,7 +221,7 @@ Let's look at phylum level taxonomy profile using the function **tax_glom**
     ps_phylum=tax_glom(ps, "Phylum")
     p1 = plot_bar(ps_phylum, fill="Phylum")
 
-![alt tag](./figs/taxa.png)
+![alt tag](./Figures/taxa.png)
 
 This gives use all phylum, let's get only the 10 most abundant, using the function **prune_taxa**
 
@@ -236,7 +245,7 @@ Using the function **plot_richness** allows to .... plot diverse richness measur
     plot_richness(ps,x="week",measures=c('Chao1','Simpson'),color="ch4...")
     dev.off()
     
-![alt tag](./figs/diversity.png)
+![alt tag](./Figures/diversity.png)
 
 ### NMDS plot
 A Nmds plot is an ordination plot : a method to represent a high dimensional object in a 2 dimensional plane. We have 10 samples with ~ 500 coordinates and we want to represente that with only about 2 (X,Y). The 
@@ -253,7 +262,7 @@ Looking at this plot there seems to be an outlier. Let's remove it and redo this
     ord.nmds.bray <- ordinate(ps.prop, method="NMDS", distance="bray")
     p2 = plot_ordination(ps.prop, ord.nmds.bray, title="Bray NMDS",label="week",color="ch4...")
 
-![alt tag](./figs/NMDS.png)
+![alt tag](./Figures/NMDS.png)
 
 Save the plots 
 

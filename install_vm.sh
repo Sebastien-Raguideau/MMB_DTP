@@ -6,7 +6,7 @@ export REPOS=$HOME"/repos"
 mkdir -p $REPOS
 cd $REPOS
 
-
+MMB_DTP=$HOME/repos/MMB_DTP
 # ------------------------------
 # ----- get all repos ---------- 
 # ------------------------------
@@ -39,7 +39,7 @@ cd $HOME/repos/STRONG
 ./install_STRONG.sh
 
 # trait inference
-mamba env create -f $APP_DIR/conda_env_Trait_inference.yaml
+mamba env create -f $MMB_DTP/conda_env_Trait_inference.yaml
 
 # Plasmidnet
 mamba create --name plasmidnet python=3.8 -y
@@ -56,7 +56,7 @@ wget https://europe.oxfordnanoportal.com/software/analysis/ont-guppy-cpu_5.0.16_
 tar -xvzf ont-guppy-cpu_5.0.16_linux64.tar.gz && mv ont-guppy-cpu_5.0.16_linux64.tar.gz ont-guppy-cpu/
 
 # --- everything else ---
-mamba env create -f $APP_DIR/conda_env_LongReads.yaml
+mamba env create -f $MMB_DTP/conda_env_LongReads.yaml
 
 
 # --- Pavian ---
@@ -72,11 +72,8 @@ source $CONDA/deactivate
 source $CONDA/activate STRONG
 mamba install -c bioconda checkm-genome megahit bwa
 
-# # add checkm database
-# mkdir -p /mnt/mydatalocal/checkm
-# cd /mnt/mydatalocal/checkm
-# wget https://data.ace.uq.edu.au/public/CheckM_databases/checkm_data_2015_01_16.tar.gz && tar -xvzf checkm_data_2015_01_16.tar.gz
-# checkm data setRoot /mnt/mydatalocal/checkm
+# add checkm database
+mamba env create -f $MMB_DTP/R.yaml
 
 # -------------------------------------
 # ---------- modify .bashrc -----------
@@ -102,8 +99,8 @@ echo -e "\n\n #------ guppy path -------">>$HOME/.bashrc
 echo -e 'export PATH=~/repos/Bandage:$PATH'>>$HOME/.bashrc
 
 #  add repos scripts 
-echo -e "\n\n #------ Ebame -------">>$HOME/.bashrc
-echo -e 'export PATH=~/repos/Ebame/scripts:$PATH'>>$HOME/.bashrc
+echo -e "\n\n #------ MMB_DTP -------">>$HOME/.bashrc
+echo -e 'export PATH=~/repos/MMB_DTP/scripts:$PATH'>>$HOME/.bashrc
 
 # add strainberry
 echo -e "\n\n #------ strainberry -------">>$HOME/.bashrc 
@@ -116,18 +113,14 @@ echo -e 'export PATH=/home/ubuntu/repos/PlasmidNet/bin:$PATH'>>$HOME/.bashrc
 
 
 ###### Install Bandage ######
-wget https://github.com/rrwick/Bandage/releases/download/v0.9.0/Bandage_Ubuntu-x86-64_v0.9.0_AppImage.zip
-unzip Bandage_Ubuntu-x86-64_v0.9.0_AppImage.zip
-ln -s Bandage_Ubuntu-x86-64_v0.9.0_AppImage /home/ubuntu/repos/miniconda3/bin/Bandage
+cd $HOME/repos
+wget https://github.com/rrwick/Bandage/releases/download/v0.9.0/Bandage_Ubuntu-x86-64_v0.9.0_AppImage.zip  -P Bandage && unzip Bandage/Bandage_Ubuntu-x86-64_v0.9.0_AppImage.zip -d Bandage && mv Bandage/Bandage_Ubuntu-x86-64_v0.9.0.AppImage Bandage/Bandage
+
 
 ###### add silly jpg ######
-cd 
+cd
 wget https://raw.githubusercontent.com/Sebastien-Raguideau/strain_resolution_practical/main/Figures/image_you_want_to_copy.jpg
 wget https://raw.githubusercontent.com/Sebastien-Raguideau/strain_resolution_practical/main/Figures/image_you_want_to_display.jpg
-
-
-
-
 
 
 # -------------------------------------
@@ -164,3 +157,9 @@ mkdir Cog && tar xzvf Cog_LE.tar.gz -C Cog && rm Cog_LE.tar.gz
 mkdir checkm && tar xzvf checkm_data_2015_01_16.tar.gz -C checkm && rm checkm_data_2015_01_16.tar.gz
 mkdir kraken && tar xzvf k2_standard_08gb_20220926.tar.gz -C kraken && rm k2_standard_08gb_20220926.tar.gz
 rm *.log
+
+
+# install checkm database
+source $CONDA/activate STRONG
+checkm data setRoot $HOME/Databases/checkm
+source $CONDA/deactivate

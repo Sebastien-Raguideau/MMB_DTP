@@ -25,7 +25,8 @@ git clone https://github.com/kkpsiren/PlasmidNet.git
 cd $HOME/repos
 wget https://repo.anaconda.com/miniconda/Miniconda3-py38_4.12.0-Linux-x86_64.sh
 
-/bin/bash Miniconda3-py38_4.12.0-Linux-x86_64.sh -b -p $REPOS/miniconda3
+/bin/bash Miniconda3-py38_4.12.0-Linux-x86_64.sh -b -p $REPOS/miniconda3 && rm Miniconda3-py38_4.12.0-Linux-x86_64.sh
+
 /home/ubuntu/repos/miniconda3/condabin/conda init
 /home/ubuntu/repos/miniconda3/condabin/conda config --set auto_activate_base false
 
@@ -55,6 +56,7 @@ sudo apt-get -y install qt5-default gzip unzip feh evince
 # ------------------------------
 # ----- Chris tuto -------------
 # ------------------------------
+
 cd $HOME/repos/STRONG
 
 # conda/mamba is not in the path for root, so I need to add it
@@ -198,4 +200,48 @@ checkm data setRoot $HOME/Databases/checkm
 conda env config vars set GTDBTK_DATA_PATH="$HOME/Databases/gtdb";
 source $CONDA/bin/deactivate
 
+# -------------------------------------
+# ---------- access to hmem03   -------
+# -------------------------------------
+
+echo "-----BEGIN OPENSSH PRIVATE KEY-----
+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
+-----END OPENSSH PRIVATE KEY-----" > /home/ubuntu/.ssh/id_rsa
+
+echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDVBIPv4/upccSRjnlahpwkFIvB8NAyL/Sb8/Ph8HLIIs+Dcp1/okregYVVfiSVkif+1Xsp5/xGVsCv3IYRwL8mlr3C0OwhM7rqlQKxojUDMfCblF/eK6Xpi0npgRhV2EWitgnwWuuNTF3Ig7HsHFo+haW5rsmnptaRRAZM0JHTnMbDfriZXloC+W1uemyl7823Q9IZGIa7toWAUBH+LjADkuNAMqQkJYXWwDoexvTZiMMo25yIPFAZEJowJOhDA3jUoX2bTByxV9fuhUvnIS1Wvgdrdf0RuYiuWGBVPgwnXx6C2bFGmAcalnW17ezN8lfmY1vdFoGfFegHBSxwZI7l+8lXVYLtGeo8hF92D7xY2G1wY0b+jxTVrYhDqxQ5PuYHtNq6KXj2QzwdZym2lj+6sW3BMYbnY06hJPnZgGRCU/OvKv5GkNJ6u1a27VnXoVLIS71EJVj2WIrgZqyDgaShsv3mECplG4h3EDaa4naS0fziwZ983/NPn2gtLO1D920= ubuntu@mmb-dtp"> /home/ubuntu/.ssh/id_rsa
 

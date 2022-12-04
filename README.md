@@ -2,7 +2,7 @@
 
 **Monday:**  (UG55 A)  
 10h → 11h --- *Lecture* --- Introduction to microbiome bioinformatics (Chris)  
-11h → 13h --- *Practical* --- 16S rRNA Bioinformatics Tutorial - [dada2/phyloseq](https://github.com/Sebastien-Raguideau/MMB_DTP/blob/main/DADA2.md) (Seb)  
+11h → 13h --- *Practical* --- [16S rRNA Bioinformatics Tutorial](https://github.com/Sebastien-Raguideau/MMB_DTP/blob/main/DADA2.md) (Seb)  
 LUNCH  
 14h → 15h --- *Lecture* --- Introduction to metagenomics binning (Chris)  
 15h → 17h --- *Practical* --- [Manual metagenomic pipeline](https://github.com/Sebastien-Raguideau/MMB_DTP/blob/main/Binning.md) (assembly to bin quality) (Seb)  

@@ -20,6 +20,34 @@ git clone https://github.com/chrisquince/genephene.git
 git clone https://github.com/rvicedomini/strainberry.git
 git clone https://github.com/kkpsiren/PlasmidNet.git
 
+
+# ------------------------------
+# ----- install conda ---------- 
+# ------------------------------
+cd $HOME/repos
+wget https://repo.anaconda.com/miniconda/Miniconda3-py38_4.12.0-Linux-x86_64.sh
+
+/bin/bash Miniconda3-py38_4.12.0-Linux-x86_64.sh -b -p $REPOS/miniconda3
+/home/ubuntu/repos/miniconda3/condabin/conda init
+/home/ubuntu/repos/miniconda3/condabin/conda config --set auto_activate_base false
+
+__conda_setup="$('/home/ubuntu/repos/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+else
+    if [ -f "/home/ubuntu/repos/miniconda3/etc/profile.d/conda.sh" ]; then
+        . "/home/ubuntu/repos/miniconda3/etc/profile.d/conda.sh"
+    else
+        export PATH="/home/ubuntu/repos/miniconda3/bin:$PATH"
+    fi
+fi
+unset __conda_setup
+
+# ------------------------------
+# ----- install mamba ---------- 
+# ------------------------------
+
+
 # ------------------------------
 # ----- all sudo installs ------
 # ------------------------------
@@ -72,7 +100,7 @@ source $CONDA/deactivate
 source $CONDA/activate STRONG
 mamba install -c bioconda checkm-genome megahit bwa
 
-# add checkm database
+# add R environement
 mamba env create -f $MMB_DTP/R.yaml
 
 # -------------------------------------
@@ -111,6 +139,13 @@ echo -e "\n\n #------ plasmidnet -------">>$HOME/.bashrc
 echo -e 'export PATH=/home/ubuntu/repos/PlasmidNet/bin:$PATH'>>$HOME/.bashrc
 
 
+# -------------------------------------
+# ---------- add conda  ---------------
+# -------------------------------------
+
+$CONDA/../condabin/conda init
+/home/ubuntu/repos/miniconda3/condabin/conda config --set auto_activate_base false
+
 
 ###### Install Bandage ######
 cd $HOME/repos
@@ -127,6 +162,7 @@ wget https://raw.githubusercontent.com/Sebastien-Raguideau/strain_resolution_pra
 # ---------- download datasets  -------
 # -------------------------------------
 mkdir $HOME/Data
+ssh-keyscan 137.205.71.34 >> ~/.ssh/known_hosts # add to known host to suppress rsync question
 rsync -a --progress -L "sebr@137.205.71.34:/home/sebr/seb/Project/Tuto/MMB_DTP/datasets/*" "$HOME/Data/"
 cd $HOME/Data
 
@@ -142,9 +178,9 @@ tar xzvf STRONG_prerun.tar.gz && rm STRONG_prerun.tar.gz&
 mkdir -p $HOME/Databases
 cd $HOME/Databases
 
-# wget https://data.ace.uq.edu.au/public/gtdb/data/releases/latest/auxillary_files/gtdbtk_v2_data.tar.gz
-wget https://genome-idx.s3.amazonaws.com/kraken/k2_standard_08gb_20220926.tar.gz& 
-wget https://data.ace.uq.edu.au/public/CheckM_databases/checkm_data_2015_01_16.tar.gz&
+
+wget https://genome-idx.s3.amazonaws.com/kraken/k2_standard_08gb_20220926.tar.gz
+wget https://data.ace.uq.edu.au/public/CheckM_databases/checkm_data_2015_01_16.tar.gz
 
 # rsync databases
 # dada2 
@@ -163,3 +199,7 @@ rm *.log
 source $CONDA/activate STRONG
 checkm data setRoot $HOME/Databases/checkm
 source $CONDA/deactivate
+
+# install gtdbbtk database
+wget https://data.ace.uq.edu.au/public/gtdb/data/releases/latest/auxillary_files/gtdbtk_v2_data.tar.gz
+mkdir gtdb && tar gtdbtk_v2_data.tar.gz -C gtdb && rm gtdbtk_v2_data.tar.gz

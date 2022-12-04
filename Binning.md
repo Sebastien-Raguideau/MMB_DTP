@@ -486,7 +486,7 @@ Let's all agree on working on a file called: **"binning.snake"**
 rule create megahit_files:
     output: R1 = "{path}/R1.csv",
             R2 = "{path}/R2.csv"
-    params: data = "/home/ubuntu/data/AD_small"
+    params: data = "/home/ubuntu/Data/AD_small"
     shell:"""
         ls {params.data}/*/*R1.fastq | tr "\n" "," | sed 's/,$//' > {output.R1}
         ls {params.data}/*/*R2.fastq | tr "\n" "," | sed 's/,$//' > {output.R2}
@@ -554,8 +554,8 @@ To note:
 
 ```bash
 rule map_reads:
-    input: R1 = "/home/ubuntu/data/AD_small/{sample}/{sample}_R1.fastq",
-           R2 = "/home/ubuntu/data/AD_small/{sample}/{sample}_R1.fastq",
+    input: R1 = "/home/ubuntu/Data/AD_small/{sample}/{sample}_R1.fastq",
+           R2 = "/home/ubuntu/Data/AD_small/{sample}/{sample}_R1.fastq",
            index = "{path}/Assembly/index.done",
            assembly = "{path}/Assembly/final.contigs.fa"
     output: "{path}/Map/{sample}.mapped.sorted.bam"
@@ -605,7 +605,7 @@ import glob
 from os.path import basename,dirname
 
 # create a string variable to store path
-DATA="/home/ubuntu/data/AD_small"
+DATA="/home/ubuntu/Data/AD_small"
 # use the glob function to find all R1.fastq file in each folder of DATA
 # then only keep the directory name wich is also the sample name
 SAMPLES = [basename(dirname(file)) for file in glob.glob("%s/*/*_R1.fastq"%DATA)]

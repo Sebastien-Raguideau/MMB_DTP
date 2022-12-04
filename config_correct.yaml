@@ -5,10 +5,10 @@ samples: ['*'] # specify a list samples to use or '*' to use all samples
 threads : 8 # single task nb threads
 
 # ------ Path to data  ------ 
-data: /home/ubuntu/data/mydatalocal/STRONG_AD/data
+data: /home/ubuntu/Data/AD_small
 
 # ----- Annotation database -----
-cog_database: /home/ubuntu/data/public/teachdata/ebame-2022/metagenomics/COG
+cog_database: /home/ubuntu/data/Cog
 
 
 # ----- Binning parameters ------

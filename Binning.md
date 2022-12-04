@@ -1,41 +1,44 @@
-# Manual versus automatic metagenomic workflow.
 
-The aim of this tutorial is to go from paired reads to Mags placed in a phylogenetic tree, at first using command line and in a second time using a workflow management system, that is [snakemake](https://snakemake.readthedocs.io/en/stable/). 
 
-The workflow is quite typical and involve
+# Introduction to assembly-based metagenomics analysis.
 
-1. [Coassembly](#coassembly)
+The aim of this tutorial is to provide an introduction to the basic steps in an assembly based metagenomics analysis. We will perform taxonomic annotation of reads, perform a coassembly, generate MAGs and place them in a phylogenetic tree, using the command line. 
 
-2. [Read mapping](#readmapping)
+The workflow is quite typical and will involve:
 
-3. [Contig binning](#binning)
+1. [Taxonomic profiling](#profiling)
 
-4. [Bin quality ](#checkm)
-5. [Phylogenetic tree placement](#gtedb)
+2. [Coassembly](#coassembly)
+
+3. [Read mapping](#readmapping)
+
+4. [Contig binning](#binning)
+
+5. [Bin quality ](#checkm)
+
+6. [Phylogenetic tree placement](#gtedb)
  
 
 
-We are now going to perform a basic assembly based metagenomics analysis of these same samples. 
 This will involve a collection of different software programs:
 
-1. [megahit](https://github.com/voutcn/megahit): A highly efficient metagenomics assembler currently our default for most studies
+1. [kraken2](https://github.com/DerrickWood/kraken2): A kmer based read profiler 
 
-2. [bwa](http://bio-bwa.sourceforge.net/bwa.shtml): Necessary for mapping reads onto contigs
+2. [megahit](https://github.com/voutcn/megahit): A highly efficient metagenomics assembler currently our default for most studies
 
-3. [samtools](http://www.htslib.org/download/): Utilities for processing mapped files
+3. [bwa](http://bio-bwa.sourceforge.net/bwa.shtml): Necessary for mapping reads onto contigs
 
-4. [Metabat2](https://github.com/BinPro/CONCOCT): an automatic binning algorithm
-5. [checkm](https://ecogenomics.github.io/CheckM/#:~:text=CheckM%20provides%20a%20set%20of,copy%20within%20a%20phylogenetic%20lineage.): Tools to assess bin quality
-6. [gtdb-tk](https://github.com/Ecogenomics/GTDBTk): Toolkit to place MAG on reference phylogenetic tree and use placement for taxonomy classification. 
+4. [samtools](http://www.htslib.org/download/): Utilities for processing mapped files
+
+5. [Metabat2](https://github.com/BinPro/CONCOCT): an automatic binning algorithm
+6. [checkm](https://ecogenomics.github.io/CheckM/#:~:text=CheckM%20provides%20a%20set%20of,copy%20within%20a%20phylogenetic%20lineage.): Tools to assess bin quality
+7. [gtdb-tk](https://github.com/Ecogenomics/GTDBTk): Toolkit to place MAG on reference phylogenetic tree and use placement for taxonomy classification. 
 
 
 
 <a name="coassembly"/>
 
 ## Getting started (VM, ssh & env)
-
-For this tutorial we will use a VM generated from [EBAME-Quince (2021)](https://biosphere.france-bioinformatique.fr/catalogue/appliance/127/)
-**Please be  sure to use the ifb-core-cloud domain when launching**
 
 Please ssh to your vm using the -Y option so that X forwarding can be done. 
 
@@ -59,70 +62,155 @@ Conda environment are created as independant environment to everything else, you
 </details>
 
 
-# Manual bioinformatic
+## Getting data
 Let's create a Projects directory and work inside:
 
-    mkdir -p ~/data/mydatalocal/AD_binning
+    mkdir -p ~/Projects/AD_binning
+    
+Anaerobic digester metagenomic time series subsampled for this tutorial, reads mapping only to a few bins of interest.
+Please download and extract the dataset using this link: 
+```bash
+cd ~/Data/AD_small
+```
+
+## Taxonomic profiling with Kraken2
+
+Our first task it to profile one of the samples with Kraken2. The Kraken2 database is here ~/Databases/kraken. Can you figure out how to run sample1 forward reads through Kraken2 and generate a report using 8 threads - '--use-names' is also a useful flag?
+Do this in a new directory Kraken.
+
+<details><summary>~~Hint~~</summary>
+<p>
+
+ If you don't know how to use Kraken2, type it in the terminal, it will show you which argument are needed. If you can't make sense of what's written, have a look on the internet for the full documentation.
+
+ </p>
+</details>
+
+<details><summary>spoiler</summary>
+<p>
+
+ ```bash
+cd ~/Projects/AD_binning
+mkdir Kraken
+cd Kraken
+kraken2 --db ~/Databases/kraken ~/Data/AD_small/sample1/sample1_R1.fastq --threads 8 --use-names --report kraken_report.txt --output kraken_sample1
+```
+
+ </p>
+</details>
+How many reads have been classified? Why did this happen?
+If Kraken2 was able to classify all reads. What sort of information does it gives us. Is it the diversity, the accurate number of each organisms?
+
+We can visualise the kraken report as a Krona plot. 
+
+```bash
+cd ~/Projects/AD_binning/Kraken
+ktImportTaxonomy -q 1 -t 5 kraken_report.txt -o kraken_krona_report.html
+```
+
+This html output will have to be downloaded onto your own computer if you want to open it using a browser:
+
+```bash
+scp ubuntu@xxx.yyy.zzz.vvv:~/Projects/AD_binning/Kraken/kraken_krona_report.html .
+```
+
+![SCG_table](Figures/Krona.png) 
 
 ## Assembly
 
-All datasets for this tutorial can be found at: 
-    /home/ubuntu/data/public/teachdata/ebame-2022/metagenomics/Quince_datasets
 
-Or equivalently here:
-    /var/autofs/ifb/public/teachdata/ebame-2022/metagenomics
+We are going to use megahit for assembly. It is a fast memory efficient metagenomic assembler and particularly useful for handling large coassembly or large datasets.
 
-
-We have here different dataset subsampled so they can run in real time during the workshop.
-We are going to use reads from the AD_small folder. They come from an industrial anaerobic digester study we realised but correspond to only a few MAGs.
-
-For simplification sake, we are going to create a global variable:
-
-    export DATA=/home/ubuntu/data/public/teachdata/ebame-2022/metagenomics/Quince_datasets
-
-
-**This is a shell dependant command, you need to retype each time you reopen a terminal**
-
-We are going to use megahit for assembly. It is a fast memory efficient metagenomic assembler and particularly usefull for handling large coassembly.
-
-Why would you want to to assembly or coassembly? 
+Why would you want to do an assembly or a coassembly? 
 
 Megahit is installed, reads are at 
 
-    $DATA/AD_small
+    ~/Data/AD_small
 
-Bioinformatic is mostly about reading documentation, and looking on the internet how to do things. 
+Bioinformatics is mostly about reading documentation, and looking on the internet how to do things. 
 Use the -h flag on megahit and try to craft a command line to launch the assembly.
 
 <details><summary>spoiler</summary>
 <p>
 
 ```bash
-cd ~/data/mydatalocal/AD_binning
-ls $DATA/AD_small/*/*R1.fastq | tr "\n" "," | sed 's/,$//' > R1.csv
-ls $DATA/AD_small/*/*R2.fastq | tr "\n" "," | sed 's/,$//' > R2.csv
-megahit -1 $(<R1.csv) -2 $(<R2.csv) -t 4 -o Assembly
+cd ~/Projects/AD_binning
+ls ~/Data/AD_small/*/*R1.fastq | tr "\n" "," | sed 's/,$//' > R1.csv
+ls ~/Data/AD_small/*/*R2.fastq | tr "\n" "," | sed 's/,$//' > R2.csv
+megahit -1 $(<R1.csv) -2 $(<R2.csv) -t 8 -o Assembly --k-step 24
 ```
-It should take about 12 mins
+It should take about 10 mins
 </p>
 </details>
 
 What is the output of an assembler?
 How good is the assembly?
-How would we go for estimating the number of organisms in the assembly?
+How would we estimate the number of organisms in the assembly?
 
+## The return of the Kraken
+We now have an assembly with contigs being quite larger than the initial reads. Let's try to use kraken2 for taxonomic classification.
+Please take some time to modify previous command line to launch Kraken2 on the assembly.
+
+<details><summary>spoiler</summary>
+<p>
+
+ ```bash
+echo "I believe in you, you can do it without spoiler".
+```
+
+<details><summary>spoiler</summary>
+<p>
+
+ ```bash
+echo "Change ~/Data/AD_small/sample1/sample1_R1.fastq by the correct path to the assembly (final.contigs.fa)"
+ ```
+
+<details><summary>spoiler</summary>
+<p>
+
+ ```bash
+echo "also be sure to change name of the report and name of the output, otherwise you're going to erase previous results"
+```
+
+<details><summary>spoiler</summary>
+<p>
+
+ ```bash
+cd ~/Projects/AD_binning/Kraken
+kraken2 --db ~/Databases/kraken ~/Projects/AD_binning/Assembly/final.contigs.fa --threads 8 --use-names --report kraken_assembly_report.txt --output kraken_assembly
+ktImportTaxonomy -q 1 -t 5 kraken_assembly_report.txt -o kraken_krona_assembly_report.html
+```
+
+ </p>
+</details>
+
+
+ </p>
+</details>
+
+
+ </p>
+</details>
+
+
+ </p>
+</details>
+
+
+How many contigs have been classified? Why did this happen?
+![SCG_table](https://github.com/Sebastien-Raguideau/strain_resolution_practical/blob/main/Figures/krona_assembly.png) 
 
 <a name="readmapping"/>
 
 ## Read mapping
 
-What informations can be used to bins contigs?
+What kind of information can be used to bins contigs?
 
 We use bwa mem to map reads to the assembly.
 As preliminary step we need to index the assembly
 
 ```bash
-cd Assembly
+cd ~/Projects/AD_binning/Assembly
 bwa index final.contigs.fa
 cd ..
 ```
@@ -134,8 +222,8 @@ produce a sam file 'Map/sample1.sam':
 <p>
 
 ```bash
-    mkdir Map
-    bwa mem -t 4 Assembly/final.contigs.fa $DATA/AD_small/sample1/sample1_R1.fastq $DATA/AD_small/sample1/sample1_R2.fastq > Map/sample1.sam
+mkdir Map
+bwa mem -t 4 Assembly/final.contigs.fa ~/Data/AD_small/sample1/sample1_R1.fastq ~/Data/AD_small/sample1/sample1_R2.fastq > Map/sample1.sam
 ```
 </p>
 </details>
@@ -147,8 +235,9 @@ tail Map/sample1.sam
 
 It is quite a complex [format](https://en.wikipedia.org/wiki/SAM_(file_format))
 
-The sam file is a bit bulky so we never store alignments in this format instead we would convert it into bam. Can you convert this file using 
-'samtools view':
+The sam file is a bit bulky so we never store alignments in this format instead we would convert it into its binary version: bam. Can you convert this file using the command 
+
+    samtools view
 
 
 <details><summary> Convert sam to bam command</summary>
@@ -174,10 +263,10 @@ samtools sort sample1.mapped.bam -o sample1.mapped.sorted.bam
 To run all samples we would place these steps in a shell script:
 
 ```bash
-cd ~/data/mydatalocal/AD_binning
-rm ~/data/mydatalocal/AD_binning/Map/*
+cd ~/Projects/AD_binning
+rm ~/Projects/AD_binning/Map/*
 
-for file in $DATA/AD_small/*/*R1.fastq
+for file in ~/Data/AD_small/*/*R1.fastq
 do 
    
    stub=${file%_R1.fastq}
@@ -191,14 +280,17 @@ do
 done
 ```
 
+The for loop must be pasted as one chunk of text into the terminal or create a small shell script to store commands.
+Can you make sense of what that script does? 
+
 <a name="binning"/>
 
 ## Contig binning
 
-The first step is to derive coverage from bam files. For this we can use metabat2 script. It takes bam files as inpute produce a table of mean coverage depth and std for each contigs in each sample.
+The first step is to derive coverage from bam files. For this we can use metabat2 script. It takes bam files as input and produce a table of mean coverage depth and corresponding std for each contigs in each sample.
 
 ```bash
-cd ~/data/mydatalocal/AD_binning/Map
+cd ~/Projects/AD_binning/Map
 jgi_summarize_bam_contig_depths --outputDepth depth.txt *.bam
 ```
 
@@ -208,7 +300,7 @@ Make a new subfolder Binning. Move the Coverage file into this and look into cra
 <p>
 
 ```bash
-cd ~/data/mydatalocal/AD_binning
+cd ~/Projects/AD_binning
 mkdir Binning
 mv Map/depth.txt Binning/depth.txt
 metabat2 -i Assembly/final.contigs.fa -a Binning/depth.txt -t 4 -o Binning/Bins/Bin
@@ -218,11 +310,12 @@ metabat2 -i Assembly/final.contigs.fa -a Binning/depth.txt -t 4 -o Binning/Bins/
 
 How many contigs were clustered? 
 ```bash
-grep -c ">" Binning/Bins/*.fa | awk -F: '{ s+=$2 } END { print s }'
+cd ~/Projects/AD_binning/Binning/Bins
+grep -c ">" *.fa | awk -F: '{ s+=$2 } END { print s }'
 ```
 How many nucleotide were clustered?
 ```bash
-grep -v ">" Binning/Bins/*.fa |wc -m
+grep -v ">" *.fa |wc -m
 ```
  
 ## Which bins are Metagenome assembled genomes (MAGs)?
@@ -231,22 +324,9 @@ A bin is a group of contigs put together from looking at coverage/composition. H
 
 Checkm is an handy automated pipeline which will use marker set specifics to bacteria/Archea to assess contamination/completion.
 ```bash
-cd ~/data/mydatalocal/AD_binning/Binning
-checkm lineage_wf Bins/ checkm -x .fa -r
+cd ~/Projects/AD_binning/Binning
+checkm lineage_wf Bins/ checkm -x .fa -r -t 16
 ```
-
-<details><summary>After launching checkm, are you having an issue?</summary>
-<p>
-
-Unfortunately the vm are a bit short on ram and pplacer, used by checkm to identify SCG taxonomy, is extremely ram greedy. 
-Instead you will need to import output pre-generated for this tutorial. 
-
-```bash
-rm -r checkm
-ln -s ~/repos/Ebame/checkm.out .
-```
-</p>
-</details>
 
 What does each column mean? 
 
@@ -256,14 +336,19 @@ When doing metagenomic, it happens often that the MAGs you obtain are not in dat
 The gtdb toolkit does that for you:
 
 ```bash
-cd ~/data/mydatalocal/AD_binning/Binning
-export GTDBTK_DATA_PATH=ifb/data/public/teachdata/ebame/Quince-data-2021/release202
-gtdbtk classify_wf --cpus 4 --genome_dir Bins --out_dir gtdb --extension .fa --scratch_dir gtdb/scratch
+cd ~/Projects/AD_binning/Binning
+gtdbtk classify_wf --cpus 16 --genome_dir Bins --out_dir gtdb --extension .fa --scratch_dir gtdb/scratch
 ```
-That will take at least X min.
+That will take at least XXXX min.  So let's stop for today!
 
 We obtain multiple files what are they?
+
 Look at summary files what information can we obtain.
+
+```bash
+cut -f1,2,14,19 ~/Projects/AD_binning/Binning/checkm/*.summary.tsv
+```
+
 What is the RED, from gtdb?
 
 # Workflow bioinformatic
@@ -313,13 +398,13 @@ rule Hello_world:
 
 Write that command in a file for instance with nano.
 ```bash
-mkdir -p ~/data/mydatalocal/AD_snakemake
-cd ~/data/mydatalocal/AD_snakemake
+mkdir -p ~/Projects/AD_snakemake
+cd ~/Projects/AD_snakemake
 nano hello.snake
 ```
 **Debuging:**
-	- don't forget the colons
-	- don't forget the indentations
+    - don't forget the colons
+    - don't forget the indentations
 
 
 Then ask snakemake to generate that file:
@@ -328,7 +413,7 @@ snakemake -s hello.snake ~/snakemake.txt -c1
 ```
 <details><summary>What happens? </summary>
 <p>
-	
+    
 By specifying a results, for instance ~/snakemake.txt, snakemake will look at all available rules in your snakemake file (hello.snake) and look for any a  output matching your requirement. It check then for correponding required input. If the input is there, only 1 rule need to be run, if it is not, then snakemake look for another rule to generate that output and if it doesn't exist, it will stop.
 
 </p>
@@ -353,7 +438,7 @@ rule Hello_world:
 Let's try this new version:
 
 ```bash
-snakemake -s hello.snake ~/data/mydatalocal/snakemake.txt -c1
+snakemake -s hello.snake ~/Projects/snakemake.txt -c1
 ``` 
 ### Additional rule entries
 -   threads : number of threads the rule needs, default = 1
@@ -390,10 +475,10 @@ If you ever want to use wildcards be sure that all wildcards in input cat be der
 We are now good to go with translating previous commands into a snakemake file. Let's start with the creation of files for megahit. The best way to proceed is to copy and paste previous command lines and build around it. First let's have a go at creating the R1.csv and R2.csv.
 Start from 
 ```bash
-ls $DATA/AD_small/*/*R1.fastq | tr "\n" "," | sed 's/,$//' > R1.csv
-ls $DATA/AD_small/*/*R2.fastq | tr "\n" "," | sed 's/,$//' > R2.csv
+ls ~/Data/AD_small/*/*R1.fastq | tr "\n" "," | sed 's/,$//' > R1.csv
+ls ~/Data/AD_small/*/*R2.fastq | tr "\n" "," | sed 's/,$//' > R2.csv
 ```
-Let's all agree on working on a file called: "binning.snake"
+Let's all agree on working on a file called: **"binning.snake"** 
 <details><summary>Try for yourself for 5 min before looking here. </summary>
 <p>
 
@@ -401,12 +486,12 @@ Let's all agree on working on a file called: "binning.snake"
 rule create megahit_files:
     output: R1 = "{path}/R1.csv",
             R2 = "{path}/R2.csv"
-    params: data = "/home/ubuntu/data/public/teachdata/ebame-2022/metagenomics/Quince_datasets/AD_small"
+    params: data = "/home/ubuntu/data/AD_small"
     shell:"""
         ls {params.data}/*/*R1.fastq | tr "\n" "," | sed 's/,$//' > {output.R1}
         ls {params.data}/*/*R2.fastq | tr "\n" "," | sed 's/,$//' > {output.R2}
          """
-```	
+``` 
 
 To note:
  - I use param to store the path info, it makes things clearer. 
@@ -469,8 +554,8 @@ To note:
 
 ```bash
 rule map_reads:
-    input: R1 = "/home/ubuntu/data/public/teachdata/ebame-2022/metagenomics//Quince_datasets/AD_small/{sample}/{sample}_R1.fastq",
-           R2 = "/home/ubuntu/data/public/teachdata/ebame-2022/metagenomics/Quince_datasets/AD_small/{sample}/{sample}_R1.fastq",
+    input: R1 = "/home/ubuntu/data/AD_small/{sample}/{sample}_R1.fastq",
+           R2 = "/home/ubuntu/data/AD_small/{sample}/{sample}_R1.fastq",
            index = "{path}/Assembly/index.done",
            assembly = "{path}/Assembly/final.contigs.fa"
     output: "{path}/Map/{sample}.mapped.sorted.bam"
@@ -491,7 +576,7 @@ Have a try at running current snakemake.
 Let's generate 1 sample .bam file
 
 ```bash
-snakemake -s binning.snake ~/data/mydatalocal/AD_snakemake/Map/sample1.mapped.sorted.bam --cores 4 --dry-run
+snakemake -s binning.snake ~/Projects/AD_snakemake/Map/sample1.mapped.sorted.bam --cores 4 --dry-run
 ```
 If you are not under attack of multiple errors message, snakemake will have listed the series of task it plan to execute. That is the point of the "dry-run" option.
 
@@ -520,7 +605,7 @@ import glob
 from os.path import basename,dirname
 
 # create a string variable to store path
-DATA="/home/ubuntu/data/public/teachdata/ebame-2022/metagenomics/Quince_datasets/AD_small"
+DATA="/home/ubuntu/data/AD_small"
 # use the glob function to find all R1.fastq file in each folder of DATA
 # then only keep the directory name wich is also the sample name
 SAMPLES = [basename(dirname(file)) for file in glob.glob("%s/*/*_R1.fastq"%DATA)]
@@ -530,9 +615,9 @@ We create the snakemake rule:
 
 ```bash
 rule generate_coverage:
-	input: expand("{{path}}/Map/{sample}.mapped.sorted.bam",sample=SAMPLES)
-	output: "{path}/Binning/depth.txt"
-	shell: "jgi_summarize_bam_contig_depths --outputDepth {output} {input}"
+    input: expand("{{path}}/Map/{sample}.mapped.sorted.bam",sample=SAMPLES)
+    output: "{path}/Binning/depth.txt"
+    shell: "jgi_summarize_bam_contig_depths --outputDepth {output} {input}"
 ```
 To note:
 
@@ -571,9 +656,8 @@ rule metabat2:
 -   Snakemake only keep track of files specified in "input" and "output". A bad way to do snakemake is to have rules generating untracked files and just outputing a flag.
 
 -   Snakemake will resolve the sequence of rules execution before starting --> if you don't know beforehand the number of files generated, it makes things more complicated. You can: 
-	- Split your snakemake in multiple independant pipeline, so that at the start of the subsequent snakemake the first one is done and the number of file is known.
-	- Use a more complex snakemake concept: checkpoints. 
-	- Stop using snakemake to monitors theses files. Don't refers to them explicitely in input/output. Instead create emtpy "flag" at the end of a rule execution and have snakemake take that as input/output. You loose however restarts/incomplete perks of snakemake and flag file do not mesh well with restart/touch mechanisms.
-
+    - Split your snakemake in multiple independant pipeline, so that at the start of the subsequent snakemake the first one is done and the number of file is known.
+    - Use a more complex snakemake concept: checkpoints. 
+    - Stop using snakemake to monitors theses files. Don't refers to them explicitely in input/output. Instead create emtpy "flag" at the end of a rule execution and have snakemake take that as input/output. You loose however restarts/incomplete perks of snakemake and flag file do not mesh well with restart/touch mechanisms.
 
 

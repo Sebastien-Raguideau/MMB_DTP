@@ -65,8 +65,8 @@ mamba env create -f $MMB_DTP/conda_env_Trait_inference.yaml
 
 # Plasmidnet
 mamba create --name plasmidnet python=3.8 -y
-export CONDA=$(dirname $(which conda))
-source $CONDA/activate plasmidnet
+export CONDA=$(dirname $(dirname $(which conda)))
+source $CONDA/bin/activate plasmidnet
 pip install -r $HOME/repos/PlasmidNet/requirements.txt
 
 # -------------------------------------
@@ -90,9 +90,12 @@ mamba env create -f $MMB_DTP/conda_env_LongReads.yaml
 # -----------Seb Tuto --------------
 # -------------------------------------
 
-source $CONDA/deactivate
-source $CONDA/activate STRONG
-mamba install -c bioconda checkm-genome megahit bwa
+source $CONDA/bin/deactivate
+source $CONDA/bin/activate STRONG
+mamba install -c bioconda checkm-genome megahit bwa kraken2 krona
+
+# update db for krona
+cd $CONDA/envs/STRONG/opt/krona && ./updateTaxonomy.sh 
 
 # add R environement
 mamba env create -f $MMB_DTP/R.yaml
@@ -136,10 +139,6 @@ echo -e 'export PATH=/home/ubuntu/repos/PlasmidNet/bin:$PATH'>>$HOME/.bashrc
 # -------------------------------------
 # ---------- add conda  ---------------
 # -------------------------------------
-
-$CONDA/../condabin/conda init
-/home/ubuntu/repos/miniconda3/condabin/conda config --set auto_activate_base false
-
 
 ###### Install Bandage ######
 cd $HOME/repos
@@ -189,11 +188,14 @@ mkdir kraken && tar xzvf k2_standard_08gb_20220926.tar.gz -C kraken && rm k2_sta
 rm *.log
 
 
-# install checkm database
-source $CONDA/activate STRONG
-checkm data setRoot $HOME/Databases/checkm
-source $CONDA/deactivate
-
 # install gtdbbtk database
 wget https://data.ace.uq.edu.au/public/gtdb/data/releases/latest/auxillary_files/gtdbtk_v2_data.tar.gz
-mkdir gtdb && tar gtdbtk_v2_data.tar.gz -C gtdb && rm gtdbtk_v2_data.tar.gz
+mkdir gtdb && tar -xzvf gtdbtk_v2_data.tar.gz --strip 1 -C gtdb && rm gtdbtk_v2_data.tar.gz
+
+# install checkm/gtdb database
+source $CONDA/bin/activate STRONG
+checkm data setRoot $HOME/Databases/checkm
+conda env config vars set GTDBTK_DATA_PATH="$HOME/Databases/gtdb";
+source $CONDA/bin/deactivate
+
+

@@ -1,5 +1,7 @@
 # MMBDTP: Microbial community bioinformatics  
 
+**Before Practicals**: [Quickstart](https://github.com/Sebastien-Raguideau/MMB_DTP/blob/main/Quickstart.md)
+
 **Monday:**  (UG55 A)  
 10h → 11h --- *Lecture* --- Introduction to microbiome bioinformatics (Chris)  
 11h → 13h --- *Practical* --- [16S rRNA Bioinformatics Tutorial](https://github.com/Sebastien-Raguideau/MMB_DTP/blob/main/DADA2.md) (Seb)  

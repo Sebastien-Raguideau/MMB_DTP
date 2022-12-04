@@ -166,7 +166,6 @@ tar xzvf HIFI_data.tar.gz && rm HIFI_data.tar.gz &
 tar xzvf Quince_datasets.tar.gz && mv Quince_datasets/* . && rm Quince_datasets.tar.gz && rm -r Quince_datasets&
 tar xzvf STRONG_prerun.tar.gz && rm STRONG_prerun.tar.gz&
 
-
 # -------------------------------------
 # ---------- download databases -------
 # -------------------------------------

@@ -94,7 +94,7 @@ mamba env create -f $MMB_DTP/conda_env_LongReads.yaml
 
 source $CONDA/bin/deactivate
 source $CONDA/bin/activate STRONG
-mamba install -c bioconda checkm-genome megahit bwa kraken2 krona
+mamba install -Y -c bioconda checkm-genome megahit bwa kraken2 krona
 
 # update db for krona
 cd $CONDA/envs/STRONG/opt/krona && ./updateTaxonomy.sh 

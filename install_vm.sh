@@ -1,7 +1,5 @@
 #!/bin/bash
 
-###### seb ll -h need accomodation ######
-
 export REPOS=$HOME"/repos"
 mkdir -p $REPOS
 cd $REPOS
@@ -42,10 +40,6 @@ else
     fi
 fi
 unset __conda_setup
-
-# ------------------------------
-# ----- install mamba ---------- 
-# ------------------------------
 
 
 # ------------------------------

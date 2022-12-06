@@ -1,4 +1,4 @@
-# EBAME 7 2022: Long read metagenomics sequencing workshop
+# MMBDTP 2022: Long read metagenomics sequencing workshop
 
 ## Long read metagenomics of the human gut microbiome
 
@@ -30,10 +30,10 @@ The tools required to undertake this tutorial are supplied in the LongReads cond
 ### Data 
 
 Sequencing data is located:
-~/data/public/teachdata/ebame/Quince-data-2022/Quince_datasets/LongRead_data/Nanopore
+~/Data/Rob_data
 
 Kraken2 database is located:
-~/data/public/teachdata/ebame/Quince-data-2021/minikraken2_v1_8GB
+~/Databases/kraken/
 
 ## Tutorial
 ### Basecalling
@@ -45,18 +45,18 @@ Nanopore sequencing results in fast5 files that contain raw signal data termed "
 conda activate LongReads
 ```
 
-It is important to store all data and outputs in directories contained within the mounted volume in `~/mydatalocal` to insure you do not run out of space on your VMs.
+It is important to store all data and outputs in directories contained within the `Projects` dir to insure you do not run out of space on your VMs.
 
-Get the fast5 reads into the `mydatalocal` dir on our VM:
+Get the fast5 reads into the `Projects` dir on our VM:
 
 ```
-cd ~/mydatalocal
+cd ~/Projects
 
 mkdir LongReads
 
 cd LongReads
 
-cp ~/data/public/teachdata/ebame/Quince-data-2021/Quince_datasets/LongRead_data/Nanopore/fast5_subset.tar.gz .
+cp ~/Data/Rob_data/fast5_subset.tar.gz .
 
 tar -xvzf fast5_subset.tar.gz
 
@@ -161,7 +161,24 @@ rm -r fast5_raw
 
 ## Read preparation
 
-Before starting any analysis, it is often advised to check the number of reads and quality of your run. You can start by using a simple bash one liner to count all reads in `pass/`.
+Before starting any analysis, it is often advised to check the number of reads and quality of your run. 
+
+Due to the time constraints with basecalling, we have prepared a set of down sampled fastq files for onward analysis. These reads have been pre basecalled using the super high accuracy basecaller using `Guppy5`.
+
+First copy one of the two GutMock*.fastq.gz files to your LongReads project directory and decompress using gunzip.
+
+```
+cd LongReads
+
+cp ~/Data/Rob_data/GutMock1.fastq.gz .
+
+gzip -d GutMock1.fastq.gz
+
+```
+
+You can start by using a simple bash one liner to count all reads in `GutMock1.fastq`.
+
+Optional: To work directly with compressed files replace 'cat' with 'zcat'.
 
 Count the number of fastq reads in the Guppy pass dir.
 
@@ -170,12 +187,12 @@ Count the number of fastq reads in the Guppy pass dir.
 <p>
 
 ```
-cat pass/*.fastq.temp | grep 'read=' - -c
+cat *.fastq.temp | grep 'read=' - -c
 ```
 |Flag                         | Description                                                            | 
 | ----------------------------|:----------------------------------------------------------------------:| 
 | `cat`                       |display content                                                         | 
-| `pass/*.fastq`              |of all files in `pass` dir ending in .fastq                             | 
+| `*.fastq`              |of all files in `pass` dir ending in .fastq                             | 
 | `\|`                        |pipe output of cat to grep                                              |
 | `grep`                      |call grep search                                                        |
 | `"read="`                   |look for lines with the unique pattern "read=" in header                |
@@ -185,15 +202,15 @@ cat pass/*.fastq.temp | grep 'read=' - -c
 or
 
 ```
-echo $(cat pass/*.fastq.temp | wc -l)/4|bc
+echo $(cat *.fastq | wc -l)/4|bc
   or
-cat pass/*.fastq.temp | echo $(wc -l)/4 | bc
+cat *.fastq | echo $(wc -l)/4 | bc
 ```
 
 |Flag                         | Description                                                            | 
 | ----------------------------|:----------------------------------------------------------------------:| 
 | `echo`                      |write to standard output (the screen)                                   | 
-| `$(cat pass/*.fastq.temp`   |of all files in `pass` dir ending in .fastq.temp                        | 
+| `$(cat pass/*.fastq.`.      |of all files in `pass` dir ending in .fastq.temp                        | 
 | `\|`                        |pipe output of cat to wc                                                |
 | `wc`                        |word count.                                                             |
 | `-l`.                       |lines                                                                   |
@@ -203,20 +220,8 @@ cat pass/*.fastq.temp | echo $(wc -l)/4 | bc
 </details>
 
 
-Due to the time constraints with basecalling, we have prepared a set of down sampled fastq files for onward analysis. These reads have been pre basecalled using the super high accuracy basecaller using `Guppy5`.
 
-Copy one of the two GutMock fastq files into the LongReads dir and decompress:
-
-```
-cd LongReads
-
-cp  ~/data/public/teachdata/ebame/Quince-data-2021/Quince_datasets/Rob_data/GutMock1.fastq.gz .
-
-gzip -d GutMock1.fastq.gz
-
-```
-
-Count the reads in the two fastq files using grep or wc as before. Use the command `more GutMock1.fastq` to familiarize yourself with nanopore fastq format.
+Use the command `more GutMock1.fastq` to familiarize yourself with nanopore fastq format.
 
 ### Read down sampling
 
@@ -258,6 +263,12 @@ Examen the number of reads in each file and use seqkit to generate simple discri
 
 For reference, [Poretools](https://poretools.readthedocs.io/en/latest/content/examples.html) can be used to examine read length distribution and associated statistics but is not provided today. 
 
+```
+seqkit stats  GutMock1.fastq 
+
+seqkit stats GutMock1_reads_downsample_FL.fastq
+
+```
 
 ## Fixing broken fastq files with Seqkit sana
 
@@ -276,9 +287,9 @@ Kraken2 provide a means to rapidly assign taxonomic identification to reads usin
 
 Custom reference databases can be created using `kraken2-build --download-library`, `--download-taxonomy` and `--build` [commands](https://ccb.jhu.edu/software/kraken2/index.shtml?t=manual#custom-databases). Mick Wattson has written [Perl scripts](https://github.com/mw55309/Kraken_db_install_scripts) to aid in customisation. An example of the creation of custom databases by the Loman lab can be found [here](http://porecamp.github.io/2017/metagenomics.html).
 
-Run [kraken2](https://github.com/DerrickWood/kraken2/wiki/Manual) on one of the two `GutMock1.fastq` files provided in this tutorial using the minikraken2_v1_8GB database. 
+Run [kraken2](https://github.com/DerrickWood/kraken2/wiki/Manual) on one of the two `GutMock1.fastq` files provided in this tutorial. 
 
-Kraken2 database is located: ~/data/public/teachdata/ebame/Quince-data-2021/minikraken2_v1_8GB/
+Kraken2 database is located: ~/Databases/kraken/
 
 Kraken2 requires an `--output` flag to redirect output from STDOUT.
 
@@ -304,7 +315,7 @@ kraken2 --db ~/data/public/teachdata/ebame/Quince-data-2021/minikraken2_v1_8GB/ 
 
 </details>
 
-Examine the Kraken report using the `more` function.
+Examine the Kraken report using `more`. (or 'less')
 
 ```
 more kraken_report 
@@ -325,13 +336,13 @@ Krona produces an interactive `.html` file based on your `--report` file. While 
 Need to update taxonomy first, this should take 3-5 min:
 
 ```
-cd /var/lib/miniconda3/envs/LongReads/opt/krona
+cd ~/repos/miniconda3/envs/LongReads/opt/krona/
 ./updateTaxonomy.sh
 
 ```
 
 ```
-cd ~/data/mydatalocal/LongReads
+cd ~/Projects/Longreads
 
 ktImportTaxonomy -q 1 -t 5 kraken_report -o kraken_krona_report.html
 
@@ -348,7 +359,7 @@ ktImportTaxonomy -q 1 -t 5 kraken_report -o kraken_krona_report.html
 Copy the html files to your local machine and open in your preferred browser (tested in firefox). To do this, open a new terminal on your machine and use the following command. Replace VMIPADDRESS with your own VM IP.
 
 ```
-scp ubuntu@VMIPADDRESS:~/data/mydatalocal/LongReads/kraken_krona_report.html Desktop/
+scp ubuntu@VMIPADDRESS:~/Projects/LongReads/kraken_krona_report.html Desktop/
 
 ```
 

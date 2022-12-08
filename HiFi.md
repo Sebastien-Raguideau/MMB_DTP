@@ -1,3 +1,4 @@
+
 # Pacbio HiFi
 
 In this tutorial we will look at some metagenomic HiFi datasets.
@@ -10,10 +11,9 @@ If this is not the case yet remember to activate the correct conda env:
 ## Dataset
 There are 2 sample, available at:
 
-    ~/data/public/teachdata/ebame-2022/metagenomics/HIFI_datasets/samples/
-- HumanReal: -------------- chris what are these again? ----------
-- Zymo: ---------------------- chris what are these again? ----------
-
+    ~/Data/HIFI_datasets/samples/
+- HumanReal
+- Zymo
 Chose either for the rest of the tutorial.
 
 As previously we can use the command seqkit stats to assess these samples.
@@ -21,7 +21,7 @@ As previously we can use the command seqkit stats to assess these samples.
 <p>
 
 ```bash
-seqkit stats ~/data/public/teachdata/ebame-2022/metagenomics/HIFI_datasets/samples/HumanReal_sample1e5.fastq.gz
+seqkit stats ~/Data/HIFI_datasets/samples/HumanReal_sample1e5.fastq.gz
 ```
 
 </p>
@@ -39,16 +39,16 @@ Which one is the best?
 In this tutorial we are going to use hifiasm-meta. As usual, try to craft your own command line to do so. But first be sure to work in this directory:
 
 ```bash
-mkdir -p ~/data/mydatalocal/HiFi
-cd ~/data/mydatalocal/HiFi
+mkdir -p ~/Projects/HiFi
+cd ~/Projects/HiFi
 ```
 
 <details><summary>Solution</summary>
 <p>
 
 ```bash
-cd ~/data/mydatalocal/HiFi
-hifiasm_meta -o asm ~/data/public/teachdata/ebame-2022/metagenomics/HIFI_datasets/samples/HumanReal_sample1e5.fastq.gz -t 4
+cd ~/Projects/HiFi
+hifiasm_meta -o asm ~/Data/HIFI_datasets/samples/HumanReal_sample1e5.fastq.gz -t 4
 ```
 </p>
 </details>
@@ -57,8 +57,8 @@ This should take about 4858.465 seconds
 
 So instead lets comment on the pre-run version.
 ```bash
-cd ~/data/mydatalocal/HiFi
-ln -s ~/data/public/teachdata/ebame-2022/metagenomics/HIFI_datasets/HumanReal_asm prerun_asm
+cd ~/Projects/HiFi
+ln -s ~/Data/HIFI_datasets/HumanReal_asm prerun_asm
 ```
 
 Here assembly is also available in the form of a .gfa. Hifiasm uses the GFA1  [format](http://gfa-spec.github.io/GFA-spec/GFA1.html). but also adds on entry relative to reads (line starting by A). 
@@ -84,14 +84,14 @@ Here, no command will help you, you need to learn about the .gfa format and writ
 
 Here is the path to homemade script, try to run it:
 
-    ~/repos/Ebame/scripts/Circ_cont_from_gfa.py 
+    ~/repos/MMB_DTP/Circ_cont_from_gfa.py 
 
 <details><summary>It should not be too hard if you use the -h</summary>
 <p>
 
 ```bash
-cd ~/data/mydatalocal/HiFi
-~/repos/Ebame/scripts/Circ_cont_from_gfa.py prerun_asm/asm.p_ctg.gfa circ_contigs
+cd ~/Projects/HiFi
+~/repos/MMB_DTP/scripts/Circ_cont_from_gfa.py prerun_asm/asm.p_ctg.gfa circ_contigs
 ```
 
 </p>
@@ -102,7 +102,7 @@ Clearly some of these are not genomes, we can still launch checkm on everything:
 
 ```bash
 conda activate STRONG
-cd ~/data/mydatalocal/HiFi
+cd ~/Projects/HiFi
 checkm lineage_wf circ_contigs checkm -x .fa -t 4 --tab_table > checkm.out
 ```
 currently won't run from lack of memeory because a gtdb run is already ongoing.
@@ -116,6 +116,7 @@ Retry to use checkm on a contigs you chose and saved with Bandage.
 Some of these smaller contigs are likely to be plasmids. Let use a machine learning [approach](https://github.com/kkpsiren/PlasmidNet) to verify this.
 Try to use a bash loop to apply this command to all files in circ_contigs:
 ```bash
+cd ~/Projects/HiFi
 mkdir plasmidnet
 prodigal -i circ_contigs/s1123.ctg001147c.fa -a plasmidnet/s1123.ctg001147c.faa -p meta
 conda activate plasmidnet

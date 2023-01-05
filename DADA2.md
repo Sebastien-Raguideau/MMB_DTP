@@ -1,7 +1,8 @@
-# 16S processing tutoriel
+# 16S processing tutorial
+
 16S sequencing is done by selectively targeting some specific conserved regions of the 16s ribosomal RNA. This is done using primer designed to correspond to the conserved regions so that all reads starts from the conserved region and span the variable region from which we can infer taxonomy. Primers are designed/selected so that Forward and Reverse reads starting from each side of the amplicon may meet in the middle and overlap. 
 
-![alt tag](/Figures/16s-gene.png)
+![structure of the 16S rDNA gene](/Figures/16s-gene.png)
 
 ### Plan 
 1) Using [dada2](https://www.nature.com/articles/nmeth.3869#methods)
@@ -17,7 +18,7 @@ To start, let's create an output folder where we will do this analysis, AD_16S.
 <details><summary>Reveal commands</summary>
 <p>
 
-```
+```bash
 mkdir -p Projects/AD_16S
 ```
 
@@ -51,8 +52,8 @@ Dada2 allows us to do so easily
 
 Use evince to look at the output. 
 
-![alt tag](/Figures/R1_qual_init.png)
-![alt tag](/Figures/R2_qual_init.png)
+![Phred quality plot for the R1 file](/Figures/R1_qual_init.png)
+![Phred quality plot for the R2 file](/Figures/R2_qual_init.png)
 
 How is the quality of the reads? 
 There is a pattern in quality, describe what can be seen.
@@ -118,7 +119,7 @@ Let's have a look at the error model that dada2 will be using :
     plotErrors(Error_R2, nominalQ=TRUE)
     dev.off()
 
-![alt tag](/Figures/Error_learned.png)
+![DADA2 Error Model](/Figures/Error_learned.png)
 
 Can you intuite what the red and black lines correspond to? 
 
@@ -221,7 +222,7 @@ Let's look at phylum level taxonomy profile using the function **tax_glom**
     ps_phylum=tax_glom(ps, "Phylum")
     p1 = plot_bar(ps_phylum, fill="Phylum")
 
-![alt tag](./Figures/taxa.png)
+![taxonomy barplot produced](./Figures/taxa.png)
 
 This gives use all phylum, let's get only the 10 most abundant, using the function **prune_taxa**
 
@@ -245,7 +246,7 @@ Using the function **plot_richness** allows to .... plot diverse richness measur
     plot_richness(ps,x="week",measures=c('Chao1','Simpson'),color="ch4...")
     dev.off()
     
-![alt tag](./Figures/diversity.png)
+![Richness plots](./Figures/diversity.png)
 
 ### NMDS plot
 A Nmds plot is an ordination plot : a method to represent a high dimensional object in a 2 dimensional plane. We have 10 samples with ~ 500 coordinates and we want to represente that with only about 2 (X,Y). The 
@@ -262,7 +263,7 @@ Looking at this plot there seems to be an outlier. Let's remove it and redo this
     ord.nmds.bray <- ordinate(ps.prop, method="NMDS", distance="bray")
     p2 = plot_ordination(ps.prop, ord.nmds.bray, title="Bray NMDS",label="week",color="ch4...")
 
-![alt tag](./Figures/NMDS.png)
+![NMDS plot](./Figures/NMDS.png)
 
 Save the plots 
 
